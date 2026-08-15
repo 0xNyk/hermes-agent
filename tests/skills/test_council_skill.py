@@ -96,6 +96,34 @@ def test_polarity_pairs_resolve_and_are_mutual(personas):
             )
 
 
+def test_polarity_pairs_match_the_roster_prose(personas, roster_text):
+    # The coordinator picks duo pairings from the prose list; panel selection
+    # reads the frontmatter. A pair present in only one of them is invisible
+    # from whichever side you happen to be reading.
+    def slug_of(prose_name):
+        folded = re.sub(r"[^a-z]", "", prose_name.lower())
+        return next(
+            (n for n in personas if re.sub(r"[^a-z]", "", n) == folded), None
+        )
+
+    section = roster_text.split("## Polarity pairs", 1)[1].split("\n## ", 1)[0]
+    prose = set()
+    for left, right in re.findall(r"^- \*\*(.+?) vs (.+?)\*\*", section, re.MULTILINE):
+        a, b = slug_of(left), slug_of(right)
+        assert a and b, f"unknown member in polarity pair '{left} vs {right}'"
+        prose.add(frozenset((a, b)))
+
+    declared = {
+        frozenset((name, peer))
+        for name, fm in personas.items()
+        for peer in fm["polarity_pairs"]
+    }
+    assert prose == declared, (
+        f"only in frontmatter {sorted(map(sorted, declared - prose))}, "
+        f"only in roster prose {sorted(map(sorted, prose - declared))}"
+    )
+
+
 def test_roster_documents_exactly_the_members_that_exist(personas, roster_text):
     documented = set(re.findall(r"`council-([a-z-]+)`", roster_text))
     assert documented == set(personas), (
