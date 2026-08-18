@@ -71,11 +71,41 @@ def test_skill_frontmatter_meets_bundled_skill_bar():
         assert fm.get(key), f"missing {key}"
 
 
-def test_every_persona_carries_the_fields_selection_depends_on(personas):
-    assert len(personas) == 18, f"expected 18 members, found {len(personas)}"
+def test_related_skills_resolve_in_repo():
+    # The catalog resolves related_skills by skill id. An entry that names no
+    # shipped skill is a dead link nobody notices until a user follows it.
+    fm = parse_frontmatter(SKILL_DIR / "SKILL.md")
+    repo_root = SKILL_DIR.parents[2]
+    related = fm["metadata"]["hermes"]["related_skills"]
+    assert related, "related_skills is empty"
 
+    for name in related:
+        hits = (
+            list(repo_root.glob(f"skills/*/{name}/SKILL.md"))
+            + list(repo_root.glob(f"optional-skills/*/{name}/SKILL.md"))
+            + list(repo_root.glob(f"skills/*/*/{name}/SKILL.md"))
+        )
+        assert hits, f"related_skills entry does not resolve in-repo: {name}"
+
+
+def test_every_persona_carries_the_fields_selection_depends_on(personas):
+    # Roster size is asserted where it is *derived*: the `classic` profile
+    # heading in roster.md, checked by test_profile_sizes_match_the_members_
+    # tagged_for_them. Pinning the literal here would only duplicate it.
+    assert personas, "no persona files found"
+
+    # The required set is a contract -- each of these keys drives a step of
+    # panel selection. Extra keys are allowed, but only if every member carries
+    # them, so the schema stays uniform across the roster without freezing a
+    # literal that a new field would have to be threaded through.
+    reference = sorted(next(iter(personas.values())))
     for name, fm in personas.items():
-        assert set(fm) == REQUIRED_PERSONA_KEYS, f"{name}: key set drifted"
+        missing = REQUIRED_PERSONA_KEYS - set(fm)
+        assert not missing, f"{name}: missing selection keys {sorted(missing)}"
+        assert sorted(fm) == reference, (
+            f"{name}: key set differs from the rest of the roster "
+            f"({sorted(set(fm) ^ set(reference))})"
+        )
         for key, value in fm.items():
             assert value, f"{name}: {key} is empty"
 
