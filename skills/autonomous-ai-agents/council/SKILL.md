@@ -35,7 +35,7 @@ arXiv:2510.07517; Free-MAD, arXiv:2509.11035). Votes are **confidence-weighted**
 /council <problem>                          auto-select a triad, quick mode
 /council --triad architecture <problem>     named 3-member triad
 /council --profile execution-lean <problem> 5-member panel
-/council --full <problem>                   all 18 members (expensive)
+/council --full <problem>                   all 18 members (36 seat-runs)
 /council --members socrates,feynman,ada <problem>
 /council --duo <problem>                    2-member dialectic
 /council --deep <problem>                   3-round full protocol
@@ -46,7 +46,7 @@ arXiv:2510.07517; Free-MAD, arXiv:2509.11035). Votes are **confidence-weighted**
 | `--triad [domain]` | Predefined 3-member combination (see `references/roster.md`) |
 | `--profile [name]` | `classic` (18), `exploration-orthogonal` (12), `execution-lean` (5) |
 | `--members a,b,...` | Manual selection (2–11) |
-| `--full` | All 18 members. Equivalent to `--profile classic` |
+| `--full` | All 18 members (36 seat-runs; 54 with `--deep`). Equivalent to `--profile classic` |
 | `--duo` | 2-member dialectic on a polarity pair |
 | `--quick` | 2-round mode (default) |
 | `--deep` | 3-round mode with cross-examination |
@@ -56,7 +56,8 @@ from the upstream project, which defaults to the full 18-member 3-round
 protocol — here every seat is a real subagent with its own context, so the
 default is the cheap path and depth is opt-in. Escalate to `--deep` when the
 decision is expensive to reverse, and to `--full` only when you want the whole
-roster's blind spots covered.
+roster's blind spots covered. Seat-runs are seats x rounds: a triad is 6, the
+default; `--full` is 36; `--full --deep` is 54.
 
 ## Execution model
 
@@ -134,9 +135,27 @@ converge without genuine disagreement.
    seat (ambiguous match)" and tally on equal weights.
 3. Never seat two members sharing a `reasoning_method`. If a substitution would
    collide, pick a different member.
+4. **Price the panel before dispatching.** Compute seat-runs = seats x rounds
+   (2 in quick mode, 3 with `--deep`). If the panel exceeds **6 seats**, do not
+   call `delegate_task` yet — put the number in front of the user and let them
+   pick the size:
 
-`[CHECKPOINT]` State members, mode, and the domain-weight seat with a one-line
-rationale.
+   ```
+   clarify(
+     question="Panel size for this deliberation - the full roster is 36 subagent runs.",
+     choices=["exploration-orthogonal profile (12 seats, 24 runs)",
+              "full roster (18 seats, 36 runs)",
+              "auto-selected triad (3 seats, 6 runs)"])
+   ```
+
+   Order the choices with the one you actually recommend first. State the count
+   in the `question`; keep the options in `choices` — never enumerate them in
+   the question text. Skip the gate for panels of 6 or fewer, and skip it when
+   no interactive user is present: state the seat-run count and proceed rather
+   than blocking a scripted run.
+
+`[CHECKPOINT]` State members, mode, seat-run count, and the domain-weight seat
+with a one-line rationale.
 
 ### STEP 1 — Round 1, rapid analysis (blind, in waves)
 
@@ -257,7 +276,8 @@ outvoted.
   produced; compression is where the disagreement dies.
 - **Do not fill an empty verdict section with filler.** Write
   `N/A — {reason}`.
-- **Do not run `--full` by reflex.** 18 seats across 3 rounds is 54 subagent
-  runs. Match the panel to what the decision is worth.
+- **Do not run `--full` by reflex.** 18 seats in the default 2-round mode is
+  36 subagent runs, and `--full --deep` is 54. Match the panel to what the
+  decision is worth; STEP 0 makes you price it before dispatching.
 - **Do not report consensus that the tally does not support.** A split reported
   honestly is more useful than a manufactured verdict.

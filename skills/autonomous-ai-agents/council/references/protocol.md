@@ -18,9 +18,11 @@ Follow the steps in order. Do not skip steps or merge rounds.
 
 As in SKILL.md STEP 0: resolve the panel, designate the 1.5× domain-weight seat
 *before* any positions exist, and reject any panel with duplicate
-`reasoning_method` values.
+`reasoning_method` values. The panel-size gate applies here too, and bites
+harder — this sequence is 3 rounds, so a full roster is 54 seat-runs rather
+than 36. Price it and run the `clarify` step for any panel above 6 seats.
 
-`[CHECKPOINT]` Members, mode, domain-weight seat + rationale.
+`[CHECKPOINT]` Members, mode, seat-run count, domain-weight seat + rationale.
 
 ### STEP 1 — Problem restate gate
 
@@ -302,6 +304,12 @@ same because one model generates them all. All six safeguards are mandatory.
    immediately before generating that member's analysis — not in a batch at the
    start. The identity and analytical-method sections prime the persona, and
    that priming decays across intervening generations.
+   A repeat view of an unchanged persona file returns a short "content
+   unchanged since it was loaded earlier" stub instead of the text. That is
+   correct token behaviour but it does not re-prime anything, so when you get
+   the stub — which is what rounds 2 and 3 will get — restate that member's
+   Identity and Grounding Protocol inline from the earlier result before
+   generating. The safeguard is the re-priming, not the tool call.
 2. **Enforce distinct output formats.** Each member has a different Standalone
    Output Format (Sun Tzu: Terrain Map → Position Assessment → Decisive Point;
    Machiavelli: Incentive Map → Stated vs Revealed → Uncomfortable Truth;
