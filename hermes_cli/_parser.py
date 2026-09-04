@@ -91,6 +91,7 @@ Examples:
     hermes                        Start interactive chat
     hermes chat -q "Hello"        Single query mode
     hermes --tui                  Launch the modern TUI (or set display.interface: tui)
+    hermes --tui --native         Opt-in native (ratatui) TUI; Ink stays the default
     hermes --cli                  Force the classic REPL (overrides display.interface: tui)
     hermes -c                     Resume the most recent session
     hermes -c "my project"        Resume a session by name (latest in lineage)
@@ -337,6 +338,13 @@ def build_top_level_parser():
         action="store_true",
         default=False,
         help="With --tui: run TypeScript sources via tsx (skip dist build)",
+    )
+    _inherited_flag(
+        parser,
+        "--native",
+        action="store_true",
+        default=False,
+        help="With --tui: use the experimental native (ratatui) client instead of Ink",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
@@ -604,6 +612,13 @@ def build_top_level_parser():
         action="store_true",
         default=argparse.SUPPRESS,
         help="With --tui: run TypeScript sources via tsx (skip dist build)",
+    )
+    _inherited_flag(
+        chat_parser,
+        "--native",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="With --tui: use the experimental native (ratatui) client instead of Ink",
     )
 
     return parser, subparsers, chat_parser

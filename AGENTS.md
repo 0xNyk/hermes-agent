@@ -298,9 +298,10 @@ hermes-agent/
 │                         #   strike-freedom-cockpit, ...
 ├── optional-skills/      # Heavier/niche skills shipped but NOT active by default
 ├── skills/               # Built-in skills bundled with the repo
-├── ui-tui/               # Ink (React) terminal UI — `hermes --tui`
+├── ui-tui/               # Ink (React) terminal UI — `hermes --tui` (default)
 │   └── src/              # entry.tsx, app.tsx, gatewayClient.ts + app/components/hooks/lib
-├── tui_gateway/          # Python JSON-RPC backend for the TUI
+├── crates/tui/           # Opt-in native (ratatui) TUI — `hermes --tui --native`
+├── tui_gateway/          # Python JSON-RPC backend for both TUI clients
 ├── acp_adapter/          # ACP server (VS Code / Zed / JetBrains integration)
 ├── cron/                 # Scheduler — jobs.py, scheduler.py
 ├── scripts/              # run_tests.sh, release.py, auxiliary scripts
@@ -464,20 +465,25 @@ if canonical == "mycommand":
 
 ---
 
-## TUI Architecture (ui-tui + tui_gateway)
+## TUI Architecture (ui-tui + crates/tui + tui_gateway)
 
 The TUI is a full replacement for the classic (prompt_toolkit) CLI, activated via `hermes --tui` or `HERMES_TUI=1`.
+
+Ink (`ui-tui/`) is the default client. An experimental native client (`crates/tui/`, binary `hermes-tui-native`) speaks the same newline-delimited JSON-RPC and is opt-in via `hermes --tui --native` or `HERMES_TUI_NATIVE=1`. Do not replace Ink or change the `hermes --tui` default until the native client has soak time. The dashboard PTY embed always stays on Ink (`HERMES_TUI_DASHBOARD=1` ignores the native opt-in).
 
 ### Process Model
 
 ```
 hermes --tui
-  └─ Node (Ink)  ──stdio JSON-RPC──  Python (tui_gateway)
+  └─ Node (Ink)  ──stdio JSON-RPC──  Python (tui_gateway)     # default
        │                                  └─ AIAgent + tools + sessions
        └─ renders transcript, composer, prompts, activity
+
+hermes --tui --native
+  └─ hermes-tui-native (ratatui) ──stdio JSON-RPC──  Python (tui_gateway)
 ```
 
-TypeScript owns the screen. Python owns sessions, tools, model calls, and slash command logic.
+The screen client (Ink or ratatui) owns drawing and local overlays. Python owns sessions, tools, model calls, and slash command logic. Do not invent a second agent backend.
 
 ### Transport
 
@@ -513,6 +519,19 @@ npm run typecheck # typecheck only (tsc --noEmit)
 npm run lint      # eslint
 npm run fmt       # prettier
 npm test          # vitest
+```
+
+Native client (opt-in):
+
+```bash
+cargo install --path crates/tui
+export HERMES_TUI_NATIVE=1   # or: hermes --tui --native
+hermes --tui
+
+cd crates/tui
+cargo fmt --all -- --check
+cargo clippy --all-targets --locked -- -D warnings
+cargo test --locked
 ```
 
 ### TUI in the Dashboard (`hermes dashboard` → `/chat`)
