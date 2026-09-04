@@ -87,7 +87,7 @@ def test_parser_accepts_native():
 
 
 def test_launch_tui_uses_native_after_resume_env(monkeypatch, tmp_path):
-    import hermes_cli.main as main_mod
+    import hermes_cli.main_tui_launch as launch_mod
 
     captured = {}
     bin_path = _exe(tmp_path)
@@ -98,9 +98,9 @@ def test_launch_tui_uses_native_after_resume_env(monkeypatch, tmp_path):
     def boom(*_a, **_k):
         raise AssertionError("Ink argv must not be built for native launch")
 
-    monkeypatch.setattr(main_mod, "_make_tui_argv", boom)
+    monkeypatch.setattr(launch_mod, "_make_tui_argv", boom)
     monkeypatch.setattr(
-        main_mod.subprocess,
+        launch_mod.subprocess,
         "call",
         lambda argv, cwd=None, env=None: captured.update(
             {"argv": argv, "cwd": cwd, "env": env}
@@ -109,7 +109,7 @@ def test_launch_tui_uses_native_after_resume_env(monkeypatch, tmp_path):
     )
 
     with pytest.raises(SystemExit):
-        main_mod._launch_tui(resume_session_id="session-good-1")
+        launch_mod._launch_tui(resume_session_id="session-good-1")
 
     assert captured["argv"][0] == str(bin_path)
     assert captured["argv"][captured["argv"].index("--resume") + 1] == (
@@ -119,48 +119,48 @@ def test_launch_tui_uses_native_after_resume_env(monkeypatch, tmp_path):
 
 
 def test_launch_tui_falls_back_to_ink_without_binary(monkeypatch):
-    import hermes_cli.main as main_mod
+    import hermes_cli.main_tui_launch as launch_mod
 
     captured = {}
     monkeypatch.setenv("HERMES_TUI_NATIVE", "1")
     monkeypatch.delenv("HERMES_TUI_NATIVE_BIN", raising=False)
     monkeypatch.setattr("hermes_cli.launch_native.shutil.which", lambda *a, **k: None)
     monkeypatch.setattr(
-        main_mod,
+        launch_mod,
         "_make_tui_argv",
         lambda tui_dir, tui_dev: (["node", "dist/entry.js"], Path(".")),
     )
     monkeypatch.setattr(
-        main_mod.subprocess,
+        launch_mod.subprocess,
         "call",
         lambda argv, cwd=None, env=None: captured.update({"argv": argv}) or 1,
     )
 
     with pytest.raises(SystemExit):
-        main_mod._launch_tui()
+        launch_mod._launch_tui()
 
     assert captured["argv"] == ["node", "dist/entry.js"]
 
 
 def test_launch_tui_dev_stays_on_ink(monkeypatch, tmp_path):
-    import hermes_cli.main as main_mod
+    import hermes_cli.main_tui_launch as launch_mod
 
     captured = {}
     bin_path = _exe(tmp_path)
     monkeypatch.setenv("HERMES_TUI_NATIVE", "1")
     monkeypatch.setenv("HERMES_TUI_NATIVE_BIN", str(bin_path))
     monkeypatch.setattr(
-        main_mod,
+        launch_mod,
         "_make_tui_argv",
         lambda tui_dir, tui_dev: (["tsx", "src/entry.tsx"], Path(".")),
     )
     monkeypatch.setattr(
-        main_mod.subprocess,
+        launch_mod.subprocess,
         "call",
         lambda argv, cwd=None, env=None: captured.update({"argv": argv}) or 1,
     )
 
     with pytest.raises(SystemExit):
-        main_mod._launch_tui(tui_dev=True)
+        launch_mod._launch_tui(tui_dev=True)
 
     assert captured["argv"] == ["tsx", "src/entry.tsx"]
